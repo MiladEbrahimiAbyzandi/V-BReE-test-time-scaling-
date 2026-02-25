@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+src/vbree/__init__.py
+src/vbree.egg-info/PKG-INFO
+src/vbree.egg-info/SOURCES.txt
+src/vbree.egg-info/dependency_links.txt
+src/vbree.egg-info/top_level.txt
