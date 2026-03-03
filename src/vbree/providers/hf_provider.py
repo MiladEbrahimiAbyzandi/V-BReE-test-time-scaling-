@@ -17,7 +17,7 @@ class HfProvider(BaseProvider):
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=500,
+            max_tokens=1000,
             **kwargs
         )
         return response.choices[0].message.content
