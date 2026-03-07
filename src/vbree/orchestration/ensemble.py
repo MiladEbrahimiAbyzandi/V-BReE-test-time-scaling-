@@ -21,7 +21,7 @@ class Ensemble:
 
     def __init__(self, providers: dict[str, BaseProvider], verbose: bool = False):
 
-        self.variance_threshold = 5.0
+        self.variance_threshold = 9.5
         self.providers = providers
         self.verbose = verbose
         self.variance_scaling_factor = 1.1
