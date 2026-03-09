@@ -22,22 +22,39 @@ Possible Choices:
 {choices_str}
 
 Task:
-1) Rate the answer from 0 to 100 by aggregating:
+1) Evaluate the previous answer from 0 to 100 by aggregating:
    - clarity (0-30)
    - completeness (0-30)
    - accuracy (0-40)
    Empty responses should receive the minimum score.
-2) Refine the answer for maximum clarity, completeness, and accuracy.
-   Remove filler and omit feedback or references to the original version.
-   If no improvements are possible, provide the text verbatim.
-3) Based on your updated response, identify the single letter from the possible choices.
+
+2) Treat the previous answer only as a candidate response, not as ground truth.
+   Critically assess it and use only any parts that are logically valid or helpful.
+   Then answer the question independently in your own words.
+   Do not simply paraphrase or lightly edit the previous answer.
+   If the previous answer is flawed, incomplete, or misleading, correct it.
+   If it is strong, you may agree with it, but only after independent reasoning.
+   Keep your response concise — maximum 990 tokens. No LaTeX formatting.
+
+3) Based on your independent final response, identify the single best letter from the possible choices.
 
 IMPORTANT:
-Return ONLY valid JSON, with exactly these keys:
-- "score" (number 0-100)
-- "response" (string)
-- "letter" (one of: {letters})
+- Maintain independence of judgment.
+- Do not assume the previous answer is correct.
+- Do not preserve the previous answer unless it is justified by your own reasoning.
+- Return ONLY a valid JSON object. Do not include any preamble, markdown blocks, or postscript.
 
-Example:
-{{"score": 85, "response": "....", "letter": "C"}}
+Target Schema:
+{{
+  "score": <number>,
+  "response": "<string>",
+  "letter": "<one of: {letters}>"
+}}
+
+Example Output:
+{{
+  "score": 85,
+  "response": "The capital of France is Paris.",
+  "letter": "C"
+}}
 """

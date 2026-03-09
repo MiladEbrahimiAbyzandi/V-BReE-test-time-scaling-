@@ -6,9 +6,9 @@ import os
 load_dotenv()
 
 class HfProvider(BaseProvider):
-    def __init__(self, model: str):
+    def __init__(self, model: str, provider: str = "auto"):
         self.client = InferenceClient(
-            provider="auto",        
+            provider=provider,        
             api_key=os.getenv("HF_TOKEN")  
         )
         self.model = model

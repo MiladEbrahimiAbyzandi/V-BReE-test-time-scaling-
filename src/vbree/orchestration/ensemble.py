@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import random
 import warnings
+import ftfy
 
 from vbree.providers.base import BaseProvider
 from vbree.prompts.vbree_mcq import build_prompt
@@ -37,18 +38,21 @@ class Ensemble:
         self.models.append(model_name)
 
     def get_response(self, model_name: str, prompt: str, **kwargs) -> str:
-        if model_name not in self.providers:
-            raise ValueError(f"Model '{model_name}' not found in providers dictionary.")
-        provider = self.providers[model_name]
-        response_format = self.build_response_format()
-        raw =  provider.generate(prompt, response_format=response_format, **kwargs)
+        try:
+            if model_name not in self.providers:
+                raise ValueError(f"Model '{model_name}' not found in providers dictionary.")
+            provider = self.providers[model_name]
+            response_format = self.build_response_format()
+            raw =  provider.generate(prompt, response_format=response_format, **kwargs)
+            parsed = extract_json(raw, verbose=self.verbose)
+            parsed["score"] = clamp_score(parsed["score"])
+            parsed["letter"] = str(parsed["letter"]).strip().upper()
+            parsed["response"] = str(parsed["response"]).strip()
+            return parsed
+        except Exception as e:
+            return {"score": 0, "response": "Error", "letter": ""}
         
-        parsed = extract_json(raw, verbose=self.verbose)
-        parsed["score"] = clamp_score(parsed["score"])
-        parsed["letter"] = str(parsed["letter"]).strip().upper()
-        parsed["response"] = str(parsed["response"]).strip()
         
-        return parsed
     
     def _calculate_confidence_score(self, mean: float, variance: float, n: int) -> float:
         pv = variance * self.variance_confidence_coefficient

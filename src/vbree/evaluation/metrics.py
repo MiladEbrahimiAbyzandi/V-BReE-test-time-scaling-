@@ -25,7 +25,7 @@ def accuracy_score(
     _require_columns(results, required_result_cols, "Results DataFrame")
 
     if dataset_id_col not in ground_truth.columns or ground_truth_col not in ground_truth.columns:
-        raise ValueError(f"Ground truth DataFrame must contain columns '{dataset_id_col}' and '{ground_truth_col}'.")
+        raise ValueError(f"Define dataset_id_column and ground_truth_col in the function according to your dataset.")
 
     # Ensure one ground-truth row per question id to avoid ambiguous scoring.
     gt = ground_truth[[dataset_id_col, ground_truth_col]].dropna()
@@ -61,43 +61,51 @@ def _build_judge_prompt(
     start_answer: str,
     end_answer: str,
 ) -> str:
-    return f"""You are an expert evaluator assessing mathematical reasoning quality.
+    return f"""You are an expert evaluator assessing reasoning quality.
 
-Question: {question}
+    Evaluate Answer A and Answer B against the reference reasoning.
 
-Reference Reasoning (Ground Truth):
-{cot_ground_truth}
+    Question:
+    {question}
 
-Answer A (Starting Response):
-{start_answer}
+    Reference Reasoning:
+    {cot_ground_truth}
 
-Answer B (Final Response):
-{end_answer}
+    Answer A:
+    {start_answer}
 
-Task:
-Compare BOTH answers against the ground truth reasoning.
-Focus on logical validity, not word matching.
-Different wording is fine as long as logic is sound.
+    Answer B:
+    {end_answer}
 
-Scoring guide:
-- 0-40: incorrect logic or wrong conclusion
-- 41-70: partially correct logic, minor gaps
-- 71-100: logically sound reasoning, correct conclusion
+    Instructions:
+    - Score Answer A from 0 to 100 based on logical correctness and alignment with the reference reasoning.
+    - Score Answer B from 0 to 100 based on logical correctness and alignment with the reference reasoning.
+    - Provide exactly one sentence of feedback for Answer A.
+    - Provide exactly one sentence of feedback for Answer B.
+    - Set "improved" to true only if score_b > score_a; otherwise false.
 
-Important rules:
-- Score each answer INDEPENDENTLY against ground truth
-- Do not reward B just because it is longer
-- Focus on: are logical steps correct? is conclusion valid?
+    Scoring guide:
+    - 0-40: incorrect logic or wrong conclusion
+    - 41-70: partially correct logic with gaps or mistakes
+    - 71-100: logically sound reasoning with correct conclusion
 
-Return ONLY valid JSON:
-{{
-    "score_a": <number 0-100>,
-    "score_b": <number 0-100>,
-    "feedback_a": "<one sentence>",
-    "feedback_b": "<one sentence>",
-    "improved": <true if score_b > score_a, else false>
-}}
-"""
+    Important:
+    - Score each answer independently.
+    - Focus on reasoning quality, not wording similarity.
+    - Do not explain your process.
+    - Do not restate the question.
+    - Do not include any text before or after the JSON.
+    - Output must be valid JSON only.
+
+    Required output format:
+    {{
+    "score_a": 0,
+    "score_b": 0,
+    "feedback_a": "One sentence.",
+    "feedback_b": "One sentence.",
+    "improved": false
+    }}
+    """
 
 
 def _build_response_format_judge():
@@ -135,6 +143,7 @@ def reasoning_analysis(
     n_models: int,
     cot_content: str = "cot_content",
     dataset_id_col: str = "dataset_id",
+    verbose: bool = False,
 ) -> dict:
     _require_columns(
         results,
@@ -146,8 +155,8 @@ def reasoning_analysis(
         {dataset_id_col, cot_content},
         "Ground truth DataFrame",
     )
-    if n_models <= 0:
-        raise ValueError("n_models must be >= 1.")
+    if n_models <= 1:
+        raise ValueError("n_models must be >= 2.")
 
     scores_a = []
     scores_b = []
@@ -184,11 +193,26 @@ def reasoning_analysis(
         response_format = _build_response_format_judge()
         raw = judge_provider.generate(prompt, response_format=response_format)
 
+        # if verbose:
+
+        #     from pathlib import Path
+        #     project_root = Path(__file__).parent.parent.parent.parent
+        #     output_path = project_root / "runs" / "debug_judge_raw.txt"
+        #     # save raw response to a text file to inspect:
+        #     with open(output_path, "a", encoding='utf-8') as f:
+        #         f.write(f"Question ID: {qid}\n")
+        #         f.write(f"RAW: {raw}\n")
+        #         f.write("-" * 50 + "\n")
+
         try:
             result = json.loads(raw)
             score_a = float(result["score_a"])
             score_b = float(result["score_b"])
-        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
+            if verbose:
+                print(f"Warning: Failed to parse judge response for question ID {qid}: {e}")
+                print(f"Raw response was: {raw}")
+                
             continue
 
         scores_a.append(score_a)
@@ -269,7 +293,7 @@ def efficiency(results: pd.DataFrame) -> dict:
         group = group.sort_values("iteration")
         iterations_per_question.append(len(group))
 
-        chosen_rows = group[group["chosen_response"] == True]  # noqa: E712
+        chosen_rows = group[group["chosen_response"] == True] 
         if chosen_rows.empty:
             continue
 
