@@ -53,8 +53,11 @@ def load_mmlu_pro(
             raise ValueError("n_samples must be provided when sample=True.")
         if n_samples <= 0:
             raise ValueError("n_samples must be greater than 0.")
-
-        sample_size = min(n_samples, len(df))
-        df = df.sample(n=sample_size, random_state=random_state)
+        sample_part = []
+        for cat in df["category"].unique():
+            cat_count = (df["category"] == cat).sum()
+            sample_size = min(n_samples, cat_count)
+            sample_part.append(df[df["category"] == cat].sample(n=sample_size, random_state=random_state))
+        df = pd.concat(sample_part, ignore_index=True)
 
     return df.reset_index(drop=True)
