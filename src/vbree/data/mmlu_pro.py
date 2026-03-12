@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datasets import load_dataset
 from ast import literal_eval
+from typing import Sequence
 
 def _coerce_options_to_list(value):
     if isinstance(value, list):
@@ -19,9 +20,41 @@ def _coerce_options_to_list(value):
             raise ValueError(f"Cannot parse options string: {value}")
     raise ValueError(f"Unsupported options format: {value} (type {type(value)})")
 
-def load_demo_data(split: str = "validation") -> pd.DataFrame:
-    
-    df = load_dataset("TIGER-Lab/MMLU-Pro", split = split). to_pandas()
+def _normalize_domains(domain: str | Sequence[str] | None) -> list[str] | None:
+    if domain is None:
+        return None
+    if isinstance(domain, str):
+        return [domain]
+
+    domains = list(domain)
+    if not domains:
+        raise ValueError("domain must not be empty.")
+    return domains
+
+def load_mmlu_pro(
+    split: str = "validation",
+    sample: bool = False,
+    domain: str | Sequence[str] | None = None,
+    n_samples: int | None = None,
+    random_state: int = 42,
+) -> pd.DataFrame:
+
+    df = load_dataset("TIGER-Lab/MMLU-Pro", split=split).to_pandas()
     df["options"] = df["options"].apply(_coerce_options_to_list)
 
-    return df
+    domains = _normalize_domains(domain)
+    if domains is not None:
+        df = df[df["category"].isin(domains)]
+        if df.empty:
+            raise ValueError(f"No rows found for domain(s): {domains}")
+
+    if sample:
+        if n_samples is None:
+            raise ValueError("n_samples must be provided when sample=True.")
+        if n_samples <= 0:
+            raise ValueError("n_samples must be greater than 0.")
+
+        sample_size = min(n_samples, len(df))
+        df = df.sample(n=sample_size, random_state=random_state)
+
+    return df.reset_index(drop=True)

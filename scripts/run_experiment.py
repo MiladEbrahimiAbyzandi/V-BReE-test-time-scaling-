@@ -7,7 +7,7 @@ import ast
 from vbree.orchestration.ensemble import Ensemble
 from vbree.providers.hf_provider import HfProvider
 from vbree.evaluation.metrics import accuracy_score, reasoning_analysis, confidence_analysis, efficiency
-from vbree.data.mmlu_pro import load_demo_data as load_mmlu_pro
+from vbree.data.mmlu_pro import load_mmlu_pro
 
 def build_run_dir (run_name: str) -> Path:
     run_dir = Path(__file__).resolve().parent.parent/ "runs" / run_name
@@ -23,7 +23,7 @@ def main():
     run_name = "demo_step6"
     run_dir = build_run_dir(run_name)
 
-    data = load_mmlu_pro().head(10)
+    data = load_mmlu_pro()
 
     providers = {
         "Qwen/Qwen2.5-7B-Instruct:together": HfProvider("Qwen/Qwen2.5-7B-Instruct:together"),
@@ -62,7 +62,7 @@ def main():
         ground_truth_col="answer"
     )
 
-    judge_provider = HfProvider(model= "meta-llama/Llama-3.1-70B-Instruct")
+    judge_provider = HfProvider("moonshotai/Kimi-K2-Instruct-0905:groq")
 
     reasoning = reasoning_analysis(
         results=results,
