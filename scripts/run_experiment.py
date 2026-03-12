@@ -1,9 +1,8 @@
 from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd
-import numpy as np
 import json
-import ast
+import math
 from vbree.orchestration.ensemble import Ensemble
 from vbree.providers.hf_provider import HfProvider
 from vbree.evaluation.metrics import accuracy_score, reasoning_analysis, confidence_analysis, efficiency
@@ -15,7 +14,6 @@ def build_run_dir (run_name: str) -> Path:
     return run_dir
 
 
-
 def main():
 
     load_dotenv()
@@ -23,7 +21,7 @@ def main():
     run_name = "demo_step6"
     run_dir = build_run_dir(run_name)
 
-    data = load_mmlu_pro()
+    data = load_mmlu_pro(sample=True, n_samples=250, random_state=42)
 
     providers = {
         "Qwen/Qwen2.5-7B-Instruct:together": HfProvider("Qwen/Qwen2.5-7B-Instruct:together"),
@@ -37,23 +35,49 @@ def main():
     ens .add_model("meta-llama/Llama-3.1-8B-Instruct:cerebras")
     ens .add_model("mistralai/Mistral-7B-Instruct-v0.2")
 
-    results = ens .run(
-        data=data,
-        id_col="question_id",
-        question_col="question",
-        choices_col="options", 
-        domain_col="category",
-        temperature=0.0,
-    )
+    batch_size  = 50
 
-    results_path = run_dir / "results.csv"
-    results.to_csv(results_path, index=False)
+    itters = math.ceil(len(data) / batch_size)
+    results_parts = []
+    
+    for batch_idx in range(itters):
 
+        batch_result_path = run_dir / f"batch_{batch_idx+1}_results.csv"
+        if batch_result_path.exists():
+            print(f"Batch {batch_idx+1} results already exist. Skipping...")
+            batch_results = pd.read_csv(batch_result_path)
+            results_parts.append(batch_results)
+            continue
+        
+        start = batch_idx * batch_size
+        end = min(start + batch_size, len(data))
+        batch_data = data.iloc[start:end].copy()
+
+
+
+        batch_results = ens .run(
+            data=batch_data,
+            id_col="question_id",
+            question_col="question",
+            choices_col="options", 
+            domain_col="category",
+            temperature=0.0,
+        )
+
+
+        batch_results.to_csv(batch_result_path, index=False)
+        print(f"Batch {batch_idx+1}/{itters} completed. Results saved to: {batch_result_path}")
+        results_parts.append(batch_results)
+
+    if not results_parts:
+        raise ValueError("No batch results were loaded or generated.")
+
+    results = pd.concat(results_parts, ignore_index=True)
     results_path = run_dir / "results.csv"
     results.to_csv(results_path, index=False)
 
     # ---------------------------
-    # 6) Run metrics
+    # Run metrics
     # ---------------------------
     acc = accuracy_score(
         results=results,
