@@ -31,19 +31,19 @@ def main():
     run_name = args.run_name
     run_dir = build_run_dir(run_name)
 
-    data = load_mmlu_pro(sample=True, n_samples=250, random_state=42)
+    data = load_mmlu_pro(sample=True, n_samples=1, random_state=42)
 
     providers = {
         "Qwen/Qwen2.5-7B-Instruct:together": HfProvider("Qwen/Qwen2.5-7B-Instruct:together"),
         "meta-llama/Llama-3.1-8B-Instruct:cerebras": HfProvider("meta-llama/Llama-3.1-8B-Instruct:cerebras"),
-        "mistralai/Mistral-7B-Instruct-v0.2": HfProvider("mistralai/Mistral-7B-Instruct-v0.2", provider="featherless-ai")
+        "google/gemma-2-9b-it": HfProvider("google/gemma-2-9b-it", provider="featherless-ai")
     }
 
     ens  = Ensemble(providers=providers, verbose=True)
 
     ens .add_model("Qwen/Qwen2.5-7B-Instruct:together")
     ens .add_model("meta-llama/Llama-3.1-8B-Instruct:cerebras")
-    ens .add_model("mistralai/Mistral-7B-Instruct-v0.2")
+    ens .add_model("google/gemma-2-9b-it")
 
     batch_size  = 50
 
@@ -71,7 +71,6 @@ def main():
             question_col="question",
             choices_col="options", 
             domain_col="category",
-            temperature=0.0,
         )
 
 
