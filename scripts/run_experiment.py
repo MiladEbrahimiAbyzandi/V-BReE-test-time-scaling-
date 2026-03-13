@@ -1,4 +1,5 @@
 from pathlib import Path
+import argparse
 from dotenv import load_dotenv
 import pandas as pd
 import json
@@ -13,12 +14,21 @@ def build_run_dir (run_name: str) -> Path:
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_dir
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run a V-BReE experiment.")
+    parser.add_argument(
+        "--run-name",
+        default="demo",
+        help="Directory name under runs/ where outputs will be saved.",
+    )
+    return parser.parse_args()
 
 def main():
+    args = parse_args()
 
     load_dotenv()
 
-    run_name = "demo_step6"
+    run_name = args.run_name
     run_dir = build_run_dir(run_name)
 
     data = load_mmlu_pro(sample=True, n_samples=250, random_state=42)
