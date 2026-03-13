@@ -50,6 +50,8 @@ class Ensemble:
             parsed["response"] = str(parsed["response"]).strip()
             return parsed
         except Exception as e:
+            if self.verbose:
+                print(f"[{model_name}] generation failed: {e}")
             return {"score": 0, "response": "Error", "letter": ""}
         
         

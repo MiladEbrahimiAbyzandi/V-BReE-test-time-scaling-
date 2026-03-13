@@ -42,19 +42,15 @@ IMPORTANT:
 - Maintain independence of judgment.
 - Do not assume the previous answer is correct.
 - Do not preserve the previous answer unless it is justified by your own reasoning.
-- Return ONLY a valid JSON object. Do not include any preamble, markdown blocks, or postscript.
+- Return ONLY valid JSON on a SINGLE LINE
+- No newlines inside the response field
+- No markdown formatting like ** or *
+- No bullet points or numbered lists in the response
 
 Target Schema:
-{{
-  "score": <number>,
-  "response": "<string>",
-  "letter": "<one of: {letters}>"
-}}
+{{"score": <number>, "response": "<max 80 words, plain text, no newlines>", "letter": "<one of: {letters}>"}}
 
 Example Output:
-{{
-  "score": 85,
-  "response": "The capital of France is Paris.",
-  "letter": "C"
-}}
+{{"score": 85, "response": "The capital of France is Paris because it has been the political center of France since the 12th century.", "letter": "C"}}
+
 """
