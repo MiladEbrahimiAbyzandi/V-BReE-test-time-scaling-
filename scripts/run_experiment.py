@@ -21,6 +21,12 @@ def parse_args() -> argparse.Namespace:
         default="demo",
         help="Directory name under runs/ where outputs will be saved.",
     )
+    parser.add_argument(
+        "--data-csv",
+        type=Path,
+        default=None,
+        help="Optional CSV dataset path. If omitted, load MMLU-Pro from Hugging Face.",
+    )
     return parser.parse_args()
 
 def main():
@@ -31,7 +37,7 @@ def main():
     run_name = args.run_name
     run_dir = build_run_dir(run_name)
 
-    data = load_mmlu_pro(sample=True, n_samples=1, random_state=42)
+    data = load_mmlu_pro(csv_path=args.data_csv)
 
     providers = {
         "Qwen/Qwen2.5-7B-Instruct:together": HfProvider("Qwen/Qwen2.5-7B-Instruct:together"),
