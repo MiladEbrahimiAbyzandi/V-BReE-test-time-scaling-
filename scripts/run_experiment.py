@@ -70,7 +70,7 @@ def main():
         batch_data = data.iloc[start:end].copy()
 
 
-
+        ens.results = pd.DataFrame(columns=ens.results.columns)
         batch_results = ens .run(
             data=batch_data,
             id_col="question_id",
